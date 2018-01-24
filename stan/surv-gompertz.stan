@@ -1,5 +1,3 @@
-// https://github.com/dwcoder/StanSurvivalBoilerplate/
-
 functions {
   real gompertz_lpdf(real t, real l, real g) {
     return log(l) + g * t - (l/g) * (exp(g*t)-1);

@@ -1,5 +1,3 @@
-// https://github.com/dwcoder/StanSurvivalBoilerplate/
-
 functions {
   real logist_lpdf(real t, real l, real g, real s) {
     return log(l) + g*t + (-s-1)/s * log(1 + s*l/g * (exp(g*t)-1));
