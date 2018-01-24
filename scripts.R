@@ -30,9 +30,9 @@ library(loo)
 #  https://github.com/stan-dev/rstan/wiki/RStan-Getting-StartedRStan 
 
 # # load RStan and set relevent options
-# library(rstan)
-# rstan_options(auto_write = TRUE)
-# options(mc.cores = parallel::detectCores())
+library(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 
 
 
@@ -312,13 +312,13 @@ mortality_param <- read_csv('analysis/mortality_parametric_strain.csv')
 #   t_new <- seq(0, max(t), length = 100) # sequence of ages for prediction
 #   N <- length(t)
 #   N_pred <- length(t_new)
-#   
+# 
 #   # stan parameter init functions
 #   inits_expo <- function() { list(l = runif(1, 0, 1))}
 #   inits_weib <- function() { list(l = runif(1, 0, 1), b = runif(1, 0, 1))}
 #   inits_gomp <- function() { list(l = runif(1, 0, 0.1), g = runif(1, 0, 1))}
 #   inits_logi <- function() { list(l = runif(1, 0, 1), g = runif(1, 0, 1), s = runif(1, 0, 1))}
-#   
+# 
 #   # fit stan models
 #   FitStan <- function(file, init) {
 #     fit <- stan(
@@ -1278,7 +1278,7 @@ p2_2 <- ggplot(filter(trait_strain_block, name == 'shape_mort')) +
   geom_abline(intercept = 0, slope = 1, linetype = 2, alpha = 0.5) +
   geom_linerange(aes(x = y_mean_a, ymin = y_mean_b - y_se_b, ymax = y_mean_b + y_se_b), col = 'grey60') +
   geom_errorbarh(aes(y = y_mean_b, x = y_mean_a, xmin = y_mean_a - y_se_a, xmax = y_mean_a + y_se_a), col = 'grey60', height = 0) +
-  annotate('text', x = -Inf, y = Inf, label = 'Shape[mortality]', hjust = -0.08, vjust = 1.37, size = 4, parse = T) +
+  annotate('text', x = -Inf, y = Inf, label = 'shape[mortality]', hjust = -0.08, vjust = 1.37, size = 4, parse = T) +
   annotate('text', x = Inf, y = -Inf, label = '(b)', hjust = 1.25, vjust = -0.6, size = 4) +
   geom_point(aes(y_mean_a, y_mean_b), size = 1.2) +
   geom_blank(data = filter(panel_lims, name == 'shape_mort'), aes(plot_min, plot_min)) +
@@ -1290,7 +1290,7 @@ p2_3 <- ggplot(filter(trait_strain_block, name == 'shape_fecund')) +
   geom_abline(intercept = 0, slope = 1, linetype = 2, alpha = 0.5) +
   geom_linerange(aes(x = y_mean_a, ymin = y_mean_b - y_se_b, ymax = y_mean_b + y_se_b), col = 'grey60') +
   geom_errorbarh(aes(y = y_mean_b, x = y_mean_a, xmin = y_mean_a - y_se_a, xmax = y_mean_a + y_se_a), col = 'grey60', height = 0) +
-  annotate('text', x = -Inf, y = Inf, label = 'Shape[fecundity]', hjust = -0.08, vjust = 1.37, size = 4, parse = T) +
+  annotate('text', x = -Inf, y = Inf, label = 'shape[fecundity]', hjust = -0.08, vjust = 1.37, size = 4, parse = T) +
   annotate('text', x = Inf, y = -Inf, label = '(c)', hjust = 1.25, vjust = -0.6, size = 4) +
   scale_x_continuous(breaks = c(-0.8, -0.4, 0, 0.4)) +
   scale_y_continuous(breaks = c(-0.8, -0.4, 0, 0.4)) +
@@ -1833,6 +1833,13 @@ ggsave('img/Fig_S3.png', fig_s3, height = 6.5, width = 9, units = 'in')
 ### variance components (site/strain/block) by life history trait ------------ #
 ### -------------------------------------------------------------------------- #
 
+# prepare data for plotting
+var_strain_plot <- var_strain_df %>% 
+  mutate(label = factor(label, levels = rev(label)))
+
+var_site_plot <- var_site_df %>% 
+  mutate(label = factor(label, levels = rev(label)))
+
 # ggplot theme
 tts4 <- theme_bw() +
   theme(text = element_text(size = 14),
@@ -1843,10 +1850,10 @@ tts4 <- theme_bw() +
         axis.title.y = element_text(margin = margin(0, .3, 0, 0, unit = 'cm')))
 
 ## generate all panels
-ps4_a <- ggplot(var_strain_df) +
+ps4_a <- ggplot(var_strain_plot) +
   geom_vline(xintercept = 1, linetype = 2) +
-  geom_errorbarh(aes(x = ratio_med, xmin = ratio_low, xmax = ratio_upp, y = type), height = 0) +
-  geom_point(aes(ratio_med, type)) +
+  geom_errorbarh(aes(x = ratio_med, xmin = ratio_low, xmax = ratio_upp, y = label), height = 0) +
+  geom_point(aes(ratio_med, label)) +
   annotate('text', x = Inf, y = Inf, label = '(a)', hjust = 1.5, vjust = 2, size = 4.6) +
   scale_x_log10(breaks = c(0.01, 0.1, 1, 10, 100), labels = c('0.01', '0.1', '1', '10', '100')) +
   xlab(expression(over(italic(var[strain]), italic(var[block])))) + ylab(NULL) +
@@ -1859,10 +1866,10 @@ ps4_a <- ggplot(var_strain_df) +
                               'Lifespan')) +
   tts4
 
-ps4_b <- ggplot(var_site_df) +
+ps4_b <- ggplot(var_site_plot) +
   geom_vline(xintercept = 1, linetype = 2) +
-  geom_errorbarh(aes(x = ratio_med, xmin = ratio_low, xmax = ratio_upp, y = type), height = 0) +
-  geom_point(aes(ratio_med, type)) +
+  geom_errorbarh(aes(x = ratio_med, xmin = ratio_low, xmax = ratio_upp, y = label), height = 0) +
+  geom_point(aes(ratio_med, label)) +
   annotate('text', x = Inf, y = Inf, label = '(b)', hjust = 1.5, vjust = 2, size = 4.6) +
   scale_x_log10(breaks = c(0.01, 0.1, 1, 10, 100), labels = c('0.01', '0.1', '1', '10', '100')) +
   xlab(expression(over(italic(var[site]), italic(var[strain])))) + ylab(NULL) +
@@ -1874,9 +1881,9 @@ ps4_b <- ggplot(var_site_df) +
 fig_s4 <- arrangeGrob(ps4_a, ps4_b, nrow = 1, widths = c(1.35, 1))
 
 # # print to Mac OSX device (change 'quartz' to 'window' if running Windows)
-# dev.off()
-# quartz(height = 5, width = 10)
-# grid.arrange(fig_s4)
+dev.off()
+quartz(height = 5, width = 10)
+grid.arrange(fig_s4)
 
 # write to file
 ggsave('img/Fig_S4.png', fig_s4, height = 5, width = 10, units = 'in')
@@ -1974,8 +1981,8 @@ TraitCorrelations <- function(data, var_x, var_y, pos, lab_x = NULL, lab_y = NUL
 
 ## generate all panels
 trait_corr11 <- TraitCorrelations(df_means, 'lifespan', 'lifespan', pos = 'l', lab_y = 'Lifespan')
-trait_corr12 <- TraitCorrelations(df_means, 'lifespan', 'shape_mort', pos = 'l', lab_y = expression(shape[mort]))
-trait_corr13 <- TraitCorrelations(df_means, 'lifespan', 'shape_fecund', pos = 'l', lab_y = expression(shape[fecund]))
+trait_corr12 <- TraitCorrelations(df_means, 'lifespan', 'shape_mort', pos = 'l', lab_y = expression(shape[mortality]))
+trait_corr13 <- TraitCorrelations(df_means, 'lifespan', 'shape_fecund', pos = 'l', lab_y = expression(shape[fecundity]))
 trait_corr14 <- TraitCorrelations(df_means, 'lifespan', 'total_offspring', pos = 'l', lab_y = 'Cumul. fecund.')
 trait_corr15 <- TraitCorrelations(df_means, 'lifespan', 'area', pos = 'bl', lab_x = 'Lifespan', lab_y = 'Frond area')
 
@@ -1983,13 +1990,13 @@ trait_corr21 <- TraitCorrelations(df_means, 'shape_mort', 'lifespan', pos = 'm')
 trait_corr22 <- TraitCorrelations(df_means, 'shape_mort', 'shape_mort', pos = 'm')
 trait_corr23 <- TraitCorrelations(df_means, 'shape_mort', 'shape_fecund', pos = 'm')
 trait_corr24 <- TraitCorrelations(df_means, 'shape_mort', 'total_offspring', pos = 'm')
-trait_corr25 <- TraitCorrelations(df_means, 'shape_mort', 'area', lab_x = expression(shape[mort]), pos = 'b')
+trait_corr25 <- TraitCorrelations(df_means, 'shape_mort', 'area', lab_x = expression(shape[mortality]), pos = 'b')
 
 trait_corr31 <- TraitCorrelations(df_means, 'shape_fecund', 'lifespan', pos = 'm')
 trait_corr32 <- TraitCorrelations(df_means, 'shape_fecund', 'shape_mort', pos = 'm')
 trait_corr33 <- TraitCorrelations(df_means, 'shape_fecund', 'shape_fecund', pos = 'm')
 trait_corr34 <- TraitCorrelations(df_means, 'shape_fecund', 'total_offspring', pos = 'm')
-trait_corr35 <- TraitCorrelations(df_means, 'shape_fecund', 'area', lab_x = expression(shape[fecund]), pos = 'b')
+trait_corr35 <- TraitCorrelations(df_means, 'shape_fecund', 'area', lab_x = expression(shape[fecundity]), pos = 'b')
 
 trait_corr41 <- TraitCorrelations(df_means, 'total_offspring', 'lifespan', pos = 'm')
 trait_corr42 <- TraitCorrelations(df_means, 'total_offspring', 'shape_mort', pos = 'm')
