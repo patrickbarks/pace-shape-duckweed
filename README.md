@@ -1,31 +1,29 @@
 
-Data and code for analyses described in the paper "Among-strain consistency in the pace and shape of senescence in duckweed", by Patrick Barks et al. (Journal of Ecology, in press).
+Data and code for analyses described in the paper "Among-strain consistency in the pace and shape of senescence in duckweed" by Barks et al. (_Journal of Ecology_, in press).
 
-### Description of data files
-
-##### 1. data_demographic.csv
+#### Description of data files
 
 Column | Description
 -----------------------------|--------------------------------------------------
-data_demographic.csv         | 
+_data_demographic.csv_ |
 `id`                         | frond identifier
 `site`                       | site identifier
 `strain`                     | strain identifier
-`block`                      | temporal block identifier (`a` or `b`)
+`block`                      | temporal block identifier (a or b)
 `tray`                       | tray identifier
-`date_birth`                 | date of frond 'birth'
+`date_birth`                 | date of frond birth (dd/mm/yyyy)
 `discard`                    | was frond discarded from experiment? (T/F)
-`uncertain_repro`            | was there uncertainty in tracking reproduction at some point in frond's life? (T/F)
+`uncertain_repro`            | was reproduction uncertain at some point in frond's life? (T/F)
 `area`                       | frond surface area (cm^2)
-`Jun.01.2014`:`Aug.31.2014`  | number of offspring detached from frond on given date
-                             | 
-data_areas_supplementary.csv | 
+`Jun_01_2014`:`Aug_31_2014`  | number of offspring detached from frond on given date
+&nbsp;                       |
+_data_areas_supplementary.csv_ |
 `site`                       | site abbreviation
 `strain`                     | strain abbreviation
-`block`                      | spatial block (`a` or `b`)
+`block`                      | spatial block (a or b)
 `area`                       | frond surface area (cm^2)
-                             | 
-data_sites.csv               | 
+&nbsp;                       |
+_data_sites.csv_ |
 `site`                       | site abbreviation
 `dropped`                    | was site dropped from main common garden experiment? (T/F)
 `replicated`                 | was site replicated in main common garden experiment? (T/F)
