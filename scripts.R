@@ -25,9 +25,12 @@ library(loo)
 # In the R code below, sections that require the RStan library are commented
 #  out. Our analyses can be replicated without installing RStan, by using model
 #  output that we have already saved to .csv files. If users wish to re-run the
-#  RStan models, simply uncomment the relevent sections. For RStan installation
-#  instructions, see:
-#  https://github.com/stan-dev/rstan/wiki/RStan-Getting-StartedRStan 
+#  RStan models, uncomment the relevent sections (and ensure that RStan is
+#  installed correctly).
+
+# For RStan installation instructions, see:
+# (Windows) https://github.com/stan-dev/rstan/wiki/Installing-RStan-on-Windows
+# (Mac/Linux) https://github.com/stan-dev/rstan/wiki/Installing-RStan-on-Mac-or-Linux
 
 # # load RStan and set relevent options
 # library(rstan)
@@ -55,13 +58,13 @@ dat_areas_supp <- read_csv('dat/data_areas_supplementary.csv') %>%
 
 # site-specific environmental data
 dat_sites <- read_csv("dat/data_sites.csv") %>% 
-  filter(site != 'skf') %>% 
+  filter(site != 'skf') %>%       # omit site 'skf' (L. minor)
   mutate(nutrient_pc1 = princomp(data.frame(log(tdn), log(tdp)))$scores[,1])
 
 
 
 
-##### 5. Check sample sizes by site and site-by-block
+##### 5. Check final sample sizes by site and site-by-block
 group_by(dat, strain) %>% summarize(n()) %>% as.data.frame()
 group_by(dat, strain, block) %>% summarize(n()) %>% as.data.frame()
 
@@ -320,9 +323,9 @@ mortality_param <- read_csv('analysis/mortality_parametric_strain.csv')
 #   inits_logi <- function() { list(l = runif(1, 0, 1), g = runif(1, 0, 1), s = runif(1, 0, 1))}
 # 
 #   # fit stan models
-#   FitStan <- function(file, init) {
-#     fit <- stan(
-#       file = file,
+#   FitStan <- function(model, init) {
+#     fit <- sampling(
+#       model,
 #       data = list(t = t, N = N, N_pred = N_pred, t_new = t_new),
 #       init = init,
 #       warmup = 1500,
@@ -332,54 +335,54 @@ mortality_param <- read_csv('analysis/mortality_parametric_strain.csv')
 #       control = list(adapt_delta = 0.99, stepsize = 0.01, max_treedepth = 12)
 #     )
 #   }
-#   
-#   fit_expo <- FitStan('stan/surv-exponential.stan', inits_expo)
-#   fit_weib <- FitStan('stan/surv-weibull.stan', inits_weib)
-#   fit_gomp <- FitStan('stan/surv-gompertz.stan', inits_gomp)
-#   fit_logi <- FitStan('stan/surv-logistic.stan', inits_logi)
-#   
+# 
+#   fit_expo <- FitStan(mod_expo, inits_expo)
+#   fit_weib <- FitStan(mod_weib, inits_weib)
+#   fit_gomp <- FitStan(mod_gomp, inits_gomp)
+#   fit_logi <- FitStan(mod_logi, inits_logi)
+# 
 #   # check for divergent transitions
 #   Diverg <- function(fit) {
 #     args <- get_sampler_params(fit, inc_warmup = F)
 #     diverg <- do.call(rbind, args)[,5]
 #     return(n_diverg = length(which(diverg > 0)))
 #   }
-#   
+# 
 #   diverg_expo <- Diverg(fit_expo)
 #   diverg_weib <- Diverg(fit_weib)
 #   diverg_gomp <- Diverg(fit_gomp)
 #   diverg_logi <- Diverg(fit_logi)
-#   
+# 
 #   # rerun if any divergent transitions
 #   if (any(c(diverg_expo, diverg_weib, diverg_gomp, diverg_logi)) > 0) {
-#     fit_expo <- FitStan('stan/surv-exponential.stan', inits_expo)
-#     fit_weib <- FitStan('stan/surv-weibull.stan', inits_weib)
-#     fit_gomp <- FitStan('stan/surv-gompertz.stan', inits_gomp)
-#     fit_logi <- FitStan('stan/surv-logistic.stan', inits_logi)
-#     
+#     fit_expo <- FitStan(mod_expo, inits_expo)
+#     fit_weib <- FitStan(mod_weib, inits_weib)
+#     fit_gomp <- FitStan(mod_gomp, inits_gomp)
+#     fit_logi <- FitStan(mod_logi, inits_logi)
+# 
 #     diverg_expo <- Diverg(fit_expo)
 #     diverg_weib <- Diverg(fit_weib)
 #     diverg_gomp <- Diverg(fit_gomp)
 #     diverg_logi <- Diverg(fit_logi)
 #   }
-#   
+# 
 #   # extract posterior samples of survivorship and hazard
 #   surv_expo <- rstan::extract(fit_expo, pars = "surv_pred")$surv_pred
 #   surv_weib <- rstan::extract(fit_weib, pars = "surv_pred")$surv_pred
 #   surv_gomp <- rstan::extract(fit_gomp, pars = "surv_pred")$surv_pred
 #   surv_logi <- rstan::extract(fit_logi, pars = "surv_pred")$surv_pred
-#   
+# 
 #   haz_expo <- rstan::extract(fit_expo, pars = "haz_pred")$haz_pred
 #   haz_weib <- rstan::extract(fit_weib, pars = "haz_pred")$haz_pred
 #   haz_gomp <- rstan::extract(fit_gomp, pars = "haz_pred")$haz_pred
 #   haz_logi <- rstan::extract(fit_logi, pars = "haz_pred")$haz_pred
-#   
+# 
 #   # calculate waic
 #   waic_expo <- waic(extract_log_lik(fit_expo))$waic
 #   waic_weib <- waic(extract_log_lik(fit_weib))$waic
 #   waic_gomp <- waic(extract_log_lik(fit_gomp))$waic
 #   waic_logi <- waic(extract_log_lik(fit_logi))$waic
-#   
+# 
 #   # summary table for each model type
 #   df_summary <- data.frame(
 #     model = c('Exponential', 'Weibull', 'Gompertz', 'Logistic'),
@@ -387,36 +390,42 @@ mortality_param <- read_csv('analysis/mortality_parametric_strain.csv')
 #     diverg = c(diverg_expo, diverg_weib, diverg_gomp, diverg_logi),
 #     stringsAsFactors = F
 #   )
-#   
+# 
 #   # get posterior median and 95% CI of survivorship and hazard
 #   GetQuantiles <- function(model, surv, haz, t) {
 #     surv_low <- apply(surv, 2, function(x) quantile(x, probs = 0.025))
 #     surv_med <- apply(surv, 2, function(x) quantile(x, probs = 0.500))
 #     surv_upp <- apply(surv, 2, function(x) quantile(x, probs = 0.975))
-#     
+# 
 #     haz_low <- apply(haz, 2, function(x) quantile(x, probs = 0.025))
 #     haz_med <- apply(haz, 2, function(x) quantile(x, probs = 0.500))
 #     haz_upp <- apply(haz, 2, function(x) quantile(x, probs = 0.975))
-#     
+# 
 #     cbind.data.frame(surv_low, surv_med, surv_upp, haz_low, haz_med, haz_upp) %>%
 #       mutate(t = t, model = model)
 #   }
-#   
+# 
 #   posterior_quantiles <- rbind.data.frame(
 #     GetQuantiles('Exponential', surv_expo, haz_expo, t_new),
 #     GetQuantiles('Weibull', surv_weib, haz_weib, t_new),
 #     GetQuantiles('Gompertz', surv_gomp, haz_gomp, t_new),
 #     GetQuantiles('Logistic', surv_logi, haz_logi, t_new)
 #   )
-#   
+# 
 #   # join posterior_quantiles to df_summary and return
 #   posterior_quantiles %>%
-#     left_join(df_summary, by = 'model') %>% 
+#     left_join(df_summary, by = 'model') %>%
 #     mutate(model = factor(model, levels = c('Exponential',
 #                                             'Weibull',
 #                                             'Gompertz',
 #                                             'Logistic')))
 # }
+# 
+# # pre-compile stan models
+# mod_expo <- stan_model('stan/surv-exponential.stan')
+# mod_weib <- stan_model('stan/surv-weibull.stan')
+# mod_gomp <- stan_model('stan/surv-gompertz.stan')
+# mod_logi <- stan_model('stan/surv-logistic.stan')
 # 
 # # apply ParametricMortality function by strain
 # mortality_param <- dat %>%
@@ -582,7 +591,7 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 #       sigma_within = mean(data$y_sd)
 #     )
 # 
-#     stan_file <- 'stan/varcomp-nested-shape.stan'
+#     model <- stan_varcomp_shape
 # 
 #   } else {                   # if trait is not shape_mortality
 #     dat_stan <- list(
@@ -594,12 +603,12 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 #       K = as.numeric(as.factor(data$K))
 #     )
 # 
-#     stan_file <- 'stan/varcomp-nested.stan'
+#     model <- stan_varcomp
 #   }
 # 
 #   # fit model
-#   fit <- stan(
-#     file = stan_file,
+#   fit <- sampling(
+#     model,
 #     data = dat_stan,
 #     pars = c('eta_J', 'eta_K'),  # don't store fitted values for eta
 #     include = FALSE,             # don't store fitted values for eta
@@ -625,12 +634,16 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 #   return(data.frame(icc_within, icc_J, icc_K, icc_ratio, label))
 # }
 # 
+# # pre-compile stan models
+# stan_varcomp <- stan_model('stan/varcomp-nested.stan')
+# stan_varcomp_shape <- stan_model('stan/varcomp-nested-shape-mort.stan')
+# 
 # # strain/block
 # var_strain_life <- dat_join %>%
 #   StanVarComp('lifespan', 'strain', 'block', 'lifespan')
 # 
 # var_strain_shape_mort <- shape_block %>%
-#   StanVarComp('shape_mort_boot', 'strain', 'block', 'shape_mort', shape = TRUE)
+#   StanVarComp('shape_mort_boot', 'strain', 'block', 'shape_mort', TRUE)
 # 
 # var_strain_shape_fecund <- dat_join %>%
 #   StanVarComp('shape_fec_block', 'strain', 'block', 'shape_fecund')
@@ -649,7 +662,7 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 #   StanVarComp('lifespan', 'site', 'strain', 'lifespan')
 # 
 # var_site_shape_mort <- filter(shape_strain, site %in% replic_col$site) %>%
-#   StanVarComp('shape_mort_boot', 'site', 'strain', 'shape_mort', shape = TRUE)
+#   StanVarComp('shape_mort_boot', 'site', 'strain', 'shape_mort', TRUE)
 # 
 # var_site_shape_fecund <- filter(dat_join, site %in% replic_col$site) %>%
 #   StanVarComp('shape_fec_strain', 'site', 'strain', 'shape_fecund')
@@ -837,13 +850,13 @@ df_pred <- read_csv('analysis/trait_vs_env_pred.csv')
 df_alpha <- read_csv('analysis/trait_vs_env_alpha.csv')
 beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 
-# ## functions to fit stan models
+# ## function to fit stan models
 # StanFn <- function(data, var, X, seed, shape_mort = FALSE) {
-#   
+# 
 #   # remove NAs
 #   which_na <- which(is.na(data[,var]))
 #   if(length(which_na)) data <- data[-which_na,]
-#   
+# 
 #   # arrange data for stan
 #   dat_stan <- list(
 #     n = nrow(data),
@@ -853,18 +866,18 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 #     y = unlist(data[,var]),
 #     X = X
 #   )
-#   
+# 
 #   # if trait is shape_mort
 #   if(shape_mort == TRUE) {
 #     dat_stan$sigma_y = data$y_sd
-#     stan_file <- 'stan/multilevel-shape-mort.stan'
+#     model <- stan_multilevel_shape
 #   } else {
-#     stan_file <- 'stan/multilevel.stan'
+#     model <- stan_multilevel 
 #   }
-#   
+# 
 #   # fit stan model
-#   stan(
-#     file = stan_file,
+#   sampling(
+#     model,
 #     data = dat_stan,
 #     par = c('alpha', 'beta', 'beta_std'),
 #     warmup = 2000,
@@ -876,16 +889,22 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 # }
 # 
 # ## site-specific environmental characteristics
-# X <- filter(dat_sites, dropped == FALSE) %>% # 22 sites in common garden
+# # 22 sites in common garden
+# X <- filter(dat_sites, dropped == FALSE) %>%
 #   model.matrix(~ log(conductivity) + nutrient_pc1 + log(degree_days), data = .)
 # 
-# X_full <- dat_sites %>% # 24 sites for supplementary exp on frond size
+# # 24 sites for supplementary experiment on frond size
+# X_full <- dat_sites %>%
 #   model.matrix(~ log(conductivity) + nutrient_pc1 + log(degree_days), data = .)
 # 
-# ## site specific means and se in shape_mort
-# shape_site_summary <- shape_site %>% 
-#   group_by(site) %>% 
+# ## site specific mean and se in shape_mort
+# shape_site_summary <- shape_site %>%
+#   group_by(site) %>%
 #   summarize(y_mean = mean(shape_mort_boot), y_sd = sd(shape_mort_boot))
+# 
+# # pre-compile stan models
+# stan_multilevel <- stan_model('stan/multilevel.stan')
+# stan_multilevel_shape <- stan_model('stan/multilevel-shape-mort.stan')
 # 
 # # fit models
 # fit_life <- StanFn(dat_join, 'lifespan', X, 123450)
@@ -924,21 +943,21 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 # 
 # # wrapper fn for ProbG0 and Cred95
 # BetaSummary <- function(beta, label) {
-#   t(apply(beta, 2, Cred95)) %>% 
-#     round(3) %>% 
-#     as.data.frame() %>% 
-#     setNames(c('med', 'low95', 'upp95')) %>% 
-#     mutate(pg0 = round(apply(beta, 2, ProbG0), 3)) %>% 
-#     mutate(y = label) %>% 
+#   t(apply(beta, 2, Cred95)) %>%
+#     round(3) %>%
+#     as.data.frame() %>%
+#     setNames(c('med', 'low95', 'upp95')) %>%
+#     mutate(pg0 = round(apply(beta, 2, ProbG0), 3)) %>%
+#     mutate(y = label) %>%
 #     mutate(x = c('conduct', 'nutrient', 'degree_days'))
 # }
 # 
 # # get posterior probability mass > 0, and 95% CI (Table S5)
-# beta_summary <- BetaSummary(beta_std_life, 'lifespan') %>% 
+# beta_summary <- BetaSummary(beta_std_life, 'lifespan') %>%
 #   rbind.data.frame(BetaSummary(beta_std_shapem, 'shape_mort')) %>%
 #   rbind.data.frame(BetaSummary(beta_std_shapef, 'shape_fecund')) %>%
 #   rbind.data.frame(BetaSummary(beta_std_to, 'total_offspring')) %>%
-#   rbind.data.frame(BetaSummary(beta_std_area1, 'area1')) %>% 
+#   rbind.data.frame(BetaSummary(beta_std_area1, 'area1')) %>%
 #   rbind.data.frame(BetaSummary(beta_std_area2, 'area2'))
 # 
 # ## regular sequence of predictor values for prediction lines
@@ -1013,11 +1032,11 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 #   ) %>% setNames(paste(label, names(.), sep = '_'))
 # }
 # 
-# df_pred <- data.frame(x1 = new_X1[,2], x2 = new_X2[,3], x3 = new_X3[,4]) %>% 
-#   cbind.data.frame(PredQuantiles(pred_life, 'life')) %>% 
-#   cbind.data.frame(PredQuantiles(pred_shapem, 'shapem')) %>% 
+# df_pred <- data.frame(x1 = new_X1[,2], x2 = new_X2[,3], x3 = new_X3[,4]) %>%
+#   cbind.data.frame(PredQuantiles(pred_life, 'life')) %>%
+#   cbind.data.frame(PredQuantiles(pred_shapem, 'shapem')) %>%
 #   cbind.data.frame(PredQuantiles(pred_shapef, 'shapef')) %>%
-#   cbind.data.frame(PredQuantiles(pred_to, 'to')) %>% 
+#   cbind.data.frame(PredQuantiles(pred_to, 'to')) %>%
 #   cbind.data.frame(PredQuantiles(pred_area2, 'area2'))
 # 
 # ## posterior median site-specific intercepts and 95% credible intervals
@@ -1030,24 +1049,24 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 # }
 # 
 # # main common garden experiment (Nsite = 22)
-# df_alpha_main <- dat_sites %>% 
-#   filter(dropped == FALSE) %>% 
-#   dplyr::select(site) %>% 
-#   cbind.data.frame(AlphaQuantiles(alpha_life$alpha, 'life')) %>% 
-#   cbind.data.frame(AlphaQuantiles(alpha_shapem$alpha, 'shapem')) %>% 
+# df_alpha_main <- dat_sites %>%
+#   filter(dropped == FALSE) %>%
+#   dplyr::select(site) %>%
+#   cbind.data.frame(AlphaQuantiles(alpha_life$alpha, 'life')) %>%
+#   cbind.data.frame(AlphaQuantiles(alpha_shapem$alpha, 'shapem')) %>%
 #   cbind.data.frame(AlphaQuantiles(alpha_shapef$alpha, 'shapef')) %>%
 #   cbind.data.frame(AlphaQuantiles(alpha_to$alpha, 'to'))
 # 
 # # supplementary experiment with all available strains (Nsite = 24)
-# df_alpha_supp <- dat_sites %>% 
-#   dplyr::select(site) %>% 
-#   cbind.data.frame(X_full[,2:4]) %>% 
-#   as_tibble() %>% 
-#   setNames(c('site', 'conduct', 'nutrient', 'degdays')) %>% 
+# df_alpha_supp <- dat_sites %>%
+#   dplyr::select(site) %>%
+#   cbind.data.frame(X_full[,2:4]) %>%
+#   as_tibble() %>%
+#   setNames(c('site', 'conduct', 'nutrient', 'degdays')) %>%
 #   cbind.data.frame(AlphaQuantiles(alpha_area2$alpha, 'area2'))
 # 
 # # join
-# df_alpha <- df_alpha_supp %>% 
+# df_alpha <- df_alpha_supp %>%
 #   left_join(df_alpha_main, by = 'site')
 # 
 # # write to file
@@ -1061,7 +1080,7 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 ##### 22. Spatial autocorrelation in traits or environmental characteristics
 # (Table S4)
 
-# check for shared climate stations (two pairs: Lethbridge A, and Valleyview RS)
+# check for shared climate stations
 dat_sites %>% 
   arrange(climate_station) %>% 
   as.data.frame()
@@ -1098,8 +1117,8 @@ for(x in 1:nrow(meds_full)) {
   }
 }
 
-dists_inv <- 1/dists    # invert distance matrix
-diag(dists_inv) <- 0    # set diagonal to zero
+dists_inv <- 1/dists  # invert distance matrix
+diag(dists_inv) <- 0  # set diagonal to zero
 
 # calculate Moran's I and relevent stats for each variable of interest
 MoranFn <- function(value, dists_inv) {
@@ -1881,9 +1900,9 @@ ps4_b <- ggplot(var_site_plot) +
 fig_s4 <- arrangeGrob(ps4_a, ps4_b, nrow = 1, widths = c(1.35, 1))
 
 # # print to Mac OSX device (change 'quartz' to 'window' if running Windows)
-dev.off()
-quartz(height = 5, width = 10)
-grid.arrange(fig_s4)
+# dev.off()
+# quartz(height = 5, width = 10)
+# grid.arrange(fig_s4)
 
 # write to file
 ggsave('img/Fig_S4.png', fig_s4, height = 5, width = 10, units = 'in')
@@ -1981,8 +2000,8 @@ TraitCorrelations <- function(data, var_x, var_y, pos, lab_x = NULL, lab_y = NUL
 
 ## generate all panels
 trait_corr11 <- TraitCorrelations(df_means, 'lifespan', 'lifespan', pos = 'l', lab_y = 'Lifespan')
-trait_corr12 <- TraitCorrelations(df_means, 'lifespan', 'shape_mort', pos = 'l', lab_y = expression(shape[mortality]))
-trait_corr13 <- TraitCorrelations(df_means, 'lifespan', 'shape_fecund', pos = 'l', lab_y = expression(shape[fecundity]))
+trait_corr12 <- TraitCorrelations(df_means, 'lifespan', 'shape_mort', pos = 'l', lab_y = expression(Shape[mortality]))
+trait_corr13 <- TraitCorrelations(df_means, 'lifespan', 'shape_fecund', pos = 'l', lab_y = expression(Shape[fecundity]))
 trait_corr14 <- TraitCorrelations(df_means, 'lifespan', 'total_offspring', pos = 'l', lab_y = 'Cumul. fecund.')
 trait_corr15 <- TraitCorrelations(df_means, 'lifespan', 'area', pos = 'bl', lab_x = 'Lifespan', lab_y = 'Frond area')
 
@@ -1990,13 +2009,13 @@ trait_corr21 <- TraitCorrelations(df_means, 'shape_mort', 'lifespan', pos = 'm')
 trait_corr22 <- TraitCorrelations(df_means, 'shape_mort', 'shape_mort', pos = 'm')
 trait_corr23 <- TraitCorrelations(df_means, 'shape_mort', 'shape_fecund', pos = 'm')
 trait_corr24 <- TraitCorrelations(df_means, 'shape_mort', 'total_offspring', pos = 'm')
-trait_corr25 <- TraitCorrelations(df_means, 'shape_mort', 'area', lab_x = expression(shape[mortality]), pos = 'b')
+trait_corr25 <- TraitCorrelations(df_means, 'shape_mort', 'area', lab_x = expression(Shape[mortality]), pos = 'b')
 
 trait_corr31 <- TraitCorrelations(df_means, 'shape_fecund', 'lifespan', pos = 'm')
 trait_corr32 <- TraitCorrelations(df_means, 'shape_fecund', 'shape_mort', pos = 'm')
 trait_corr33 <- TraitCorrelations(df_means, 'shape_fecund', 'shape_fecund', pos = 'm')
 trait_corr34 <- TraitCorrelations(df_means, 'shape_fecund', 'total_offspring', pos = 'm')
-trait_corr35 <- TraitCorrelations(df_means, 'shape_fecund', 'area', lab_x = expression(shape[fecundity]), pos = 'b')
+trait_corr35 <- TraitCorrelations(df_means, 'shape_fecund', 'area', lab_x = expression(Shape[fecundity]), pos = 'b')
 
 trait_corr41 <- TraitCorrelations(df_means, 'total_offspring', 'lifespan', pos = 'm')
 trait_corr42 <- TraitCorrelations(df_means, 'total_offspring', 'shape_mort', pos = 'm')
