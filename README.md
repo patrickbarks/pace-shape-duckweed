@@ -7,7 +7,7 @@ Data and code for analyses described in the paper "Among-strain consistency in t
 
 Column | Description
 -----------------------------|--------------------------------------------------
-data_demographic.csv         |
+data_demographic.csv         | 
 `id`                         | frond identifier
 `site`                       | site identifier
 `strain`                     | strain identifier
@@ -18,14 +18,14 @@ data_demographic.csv         |
 `uncertain_repro`            | was there uncertainty in tracking reproduction at some point in frond's life? (T/F)
 `area`                       | frond surface area (cm^2)
 `Jun.01.2014`:`Aug.31.2014`  | number of offspring detached from frond on given date
-                             |
-data_areas_supplementary.csv |
+                             | 
+data_areas_supplementary.csv | 
 `site`                       | site abbreviation
 `strain`                     | strain abbreviation
 `block`                      | spatial block (`a` or `b`)
 `area`                       | frond surface area (cm^2)
-                             |
-data_sites.csv               |
+                             | 
+data_sites.csv               | 
 `site`                       | site abbreviation
 `dropped`                    | was site dropped from main common garden experiment? (T/F)
 `replicated`                 | was site replicated in main common garden experiment? (T/F)
