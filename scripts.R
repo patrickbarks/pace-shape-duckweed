@@ -1,6 +1,6 @@
 
 
-##### 1. Load relevant packages
+##### 1. Required libraries
 library(readr)
 library(dplyr)
 library(tibble)
@@ -24,15 +24,15 @@ library(loo)
 
 # In the R code below, sections that require the RStan library are commented
 #  out. Our analyses can be replicated without installing RStan, by using model
-#  output that we have already saved to .csv files. If users instead wish to
-#  re-run the RStan models, simply uncomment the relevent sections. See
-#  https://github.com/stan-dev/rstan/wiki/RStan-Getting-StartedRStan for
-#  RStan installation instructions.
+#  output that we have already saved to .csv files. If users wish to re-run the
+#  RStan models, simply uncomment the relevent sections. For RStan installation
+#  instructions, see:
+#  https://github.com/stan-dev/rstan/wiki/RStan-Getting-StartedRStan 
 
 # # load RStan and set relevent options
-library(rstan)
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
+# library(rstan)
+# rstan_options(auto_write = TRUE)
+# options(mc.cores = parallel::detectCores())
 
 
 
@@ -47,7 +47,7 @@ options(mc.cores = parallel::detectCores())
 # common garden demographic data
 dat <- read_csv('dat/data_demographic.csv') %>% 
   filter(!site %in% c('dbn', 'han', 'skf')) %>%   # omitted sites
-  filter(disc != TRUE)            # omit fronds that could not be tracked
+  filter(discard != TRUE)                # omit fronds that could not be tracked
 
 # frond areas from supplementary experiment with all available strains
 dat_areas_supp <- read_csv('dat/data_areas_supplementary.csv') %>% 
@@ -70,7 +70,7 @@ group_by(dat, strain, block) %>% summarize(n()) %>% as.data.frame()
 
 ##### 6. Assign site-specific colours for plotting
 replic_col <- data.frame(
-  site = dat_sites$site[dat_sites$replicated == 'yes'],
+  site = dat_sites$site[dat_sites$replicated == TRUE],
   col = brewer.pal(n = 5, name = "Accent"),
   stringsAsFactors = F
 )
@@ -84,7 +84,7 @@ dat <- left_join(dat, replic_col, by = 'site') %>%
 
 ##### 7. Extract subset containing reproduction data only
 # number of offspring produced each day by each frond
-dat_raw_repro <- subset(dat, select = Jun.01.2014:Aug.31.2014)
+dat_raw_repro <- subset(dat, select = Jun_01_2014:Aug_31_2014)
 
 
 
@@ -97,9 +97,9 @@ dat$date_first_repro <- apply(dat_raw_repro, 1, GetDateFirstRepro)
 dat$date_last_repro <- apply(dat_raw_repro, 1, GetDateLastRepro)
 
 # convert dates to R's date format
-dat$date_birth <- as.Date(dat$date_birth, format = "%b.%d.%Y")
-dat$date_first_repro <- as.Date(dat$date_first_repro, format = "%b.%d.%Y")
-dat$date_last_repro <- as.Date(dat$date_last_repro, format = "%b.%d.%Y")
+dat$date_birth <- as.Date(dat$date_birth)
+dat$date_first_repro <- as.Date(dat$date_first_repro, format = "%b_%d_%Y")
+dat$date_last_repro <- as.Date(dat$date_last_repro, format = "%b_%d_%Y")
 
 
 
@@ -110,7 +110,7 @@ dat$lifespan <- as.numeric(dat$date_last_repro - dat$date_birth + 1)
 dat$lifespan_ffr <- as.numeric(dat$date_last_repro - dat$date_first_repro + 1)
 dat$latency <- as.numeric(dat$date_first_repro - dat$date_birth + 1)
 dat$total_offspring <- rowSums(dat_raw_repro, na.rm = T)
-dat$total_offspring[which(dat$noTO == TRUE)] <- NA
+dat$total_offspring[which(dat$uncertain_repro == TRUE)] <- NA
 dat$fecund_mean <- dat$total_offspring / dat$lifespan
 dat$fecund_mean_ffr <- dat$total_offspring / dat$lifespan_ffr
 
@@ -120,10 +120,10 @@ dat$fecund_mean_ffr <- dat$total_offspring / dat$lifespan_ffr
 ##### 10. Convert demographic data to flat (tidy) format
 # create variable for daily survival and fecundity from age 1 to death
 dat_tidy <- dat %>% 
-  dplyr::select(-area, -disc, -tray, -col) %>% 
+  dplyr::select(-area, -discard, -tray, -col) %>% 
   gather(date, fecund, ends_with('2014')) %>%
   arrange(id) %>% 
-  mutate(date = as.Date(date, format = "%b.%d.%Y")) %>% 
+  mutate(date = as.Date(date, format = "%b_%d_%Y")) %>% 
   filter(date >= date_birth & date <= date_last_repro) %>%
   mutate(age = as.numeric(date - date_birth + 1),
          died = ifelse(date == date_last_repro, 1, 0),
@@ -486,23 +486,23 @@ ShapeFecundity <- function(data) {
 }
 
 fecund_slope_site <- dat_tidy_std_ffr_site %>% 
-  filter(noTO == FALSE) %>% group_by(id) %>%
+  filter(uncertain_repro == FALSE) %>% group_by(id) %>%
   do(ShapeFecundity(data = .)) %>%
   ungroup() %>% rename(shape_fec_site = shape_fec)
 
 fecund_slope_strain <- dat_tidy_std_ffr_strain %>% 
-  filter(noTO == FALSE) %>% group_by(id) %>%
+  filter(uncertain_repro == FALSE) %>% group_by(id) %>%
   do(ShapeFecundity(data = .)) %>%
   ungroup() %>% rename(shape_fec_strain = shape_fec)
 
 fecund_slope_block <- dat_tidy_std_ffr_block %>% 
-  filter(noTO == FALSE) %>% group_by(id) %>%
+  filter(uncertain_repro == FALSE) %>% group_by(id) %>%
   do(ShapeFecundity(data = .)) %>%
   ungroup() %>% rename(shape_fec_block = shape_fec)
 
 # join to dat
 dat_join <- dat %>% 
-  dplyr::select(-(Jun.01.2014:Aug.31.2014)) %>% 
+  dplyr::select(-(Jun_01_2014:Aug_31_2014)) %>% 
   left_join(dplyr::select(fecund_slope_site, id, shape_fec_site), by = 'id') %>% 
   left_join(dplyr::select(fecund_slope_strain, id, shape_fec_strain), by = 'id') %>% 
   left_join(dplyr::select(fecund_slope_block, id, shape_fec_block), by = 'id')
@@ -510,8 +510,8 @@ dat_join <- dat %>%
 # print mean shape_fecundity by strain, from highest to lowest
 dat_join %>% 
   group_by(strain) %>% 
-  summarize(x = mean(shape_fec_strain, na.rm = T)) %>% 
-  arrange(desc(x))
+  summarize(shape_fecund = mean(shape_fec_strain, na.rm = T)) %>% 
+  arrange(desc(shape_fecund))
 
 
 
@@ -550,26 +550,28 @@ trait_strain_block <- rbind.data.frame(
 
 
 ##### 19. Life history trait variance components (block, strain, site)
+# (Table 1)
 
 # read model data already written to file, from code below (commented-out code
 #  below takes ~5 minutes to run, and requires installation of RStan
 var_strain_df <- read_csv('analysis/var_strain_summary.csv')
 var_site_df <- read_csv('analysis/var_site_summary.csv')
 
+# # Function to obtain variance components
 # StanVarComp <- function(data, y, J, K, label, shape_mort = FALSE) {
-#   
+# 
 #   # organize data
-#   data <- data %>% 
-#     rename_(y = y, J = J, K = K) %>% 
-#     filter(!is.na(y)) %>% 
+#   data <- data %>%
+#     rename_(y = y, J = J, K = K) %>%
+#     filter(!is.na(y)) %>%
 #     mutate(K = paste0(J, K))
-#   
+# 
 #   if (shape_mort == TRUE) {  # if trait is shape_mortality
-#     data <- data %>% 
-#       group_by(J, K) %>% 
-#       summarize(y_mean = mean(y), y_sd = sd(y)) %>% 
+#     data <- data %>%
+#       group_by(J, K) %>%
+#       summarize(y_mean = mean(y), y_sd = sd(y)) %>%
 #       ungroup()
-#     
+# 
 #     dat_stan <- list(
 #       N = nrow(data),
 #       N_J = length(unique(data$J)),
@@ -579,9 +581,9 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 #       K = as.numeric(as.factor(data$K)),
 #       sigma_within = mean(data$y_sd)
 #     )
-#     
+# 
 #     stan_file <- 'stan/varcomp-nested-shape.stan'
-#   
+# 
 #   } else {                   # if trait is not shape_mortality
 #     dat_stan <- list(
 #       N = nrow(data),
@@ -591,7 +593,7 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 #       J = as.numeric(as.factor(data$J)),
 #       K = as.numeric(as.factor(data$K))
 #     )
-#     
+# 
 #     stan_file <- 'stan/varcomp-nested.stan'
 #   }
 # 
@@ -624,41 +626,41 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 # }
 # 
 # # strain/block
-# var_strain_life <- dat_join %>% 
+# var_strain_life <- dat_join %>%
 #   StanVarComp('lifespan', 'strain', 'block', 'lifespan')
 # 
-# var_strain_shape_mort <- shape_block %>% 
+# var_strain_shape_mort <- shape_block %>%
 #   StanVarComp('shape_mort_boot', 'strain', 'block', 'shape_mort', shape = TRUE)
 # 
-# var_strain_shape_fecund <- dat_join %>% 
+# var_strain_shape_fecund <- dat_join %>%
 #   StanVarComp('shape_fec_block', 'strain', 'block', 'shape_fecund')
 # 
-# var_strain_total_offspr <- dat_join %>% 
+# var_strain_total_offspr <- dat_join %>%
 #   StanVarComp('total_offspring', 'strain', 'block', 'total_offspring')
 # 
-# var_strain_area1 <- dat_join %>% 
+# var_strain_area1 <- dat_join %>%
 #   StanVarComp('area', 'strain', 'block', 'area1')
 # 
-# var_strain_area2 <- dat_areas_supp %>% 
+# var_strain_area2 <- dat_areas_supp %>%
 #   StanVarComp('area', 'strain', 'block', 'area2')
 # 
 # # site/strain
-# var_site_life <- filter(dat_join, site %in% replic_col$site) %>% 
+# var_site_life <- filter(dat_join, site %in% replic_col$site) %>%
 #   StanVarComp('lifespan', 'site', 'strain', 'lifespan')
 # 
-# var_site_shape_mort <- filter(shape_strain, site %in% replic_col$site) %>% 
+# var_site_shape_mort <- filter(shape_strain, site %in% replic_col$site) %>%
 #   StanVarComp('shape_mort_boot', 'site', 'strain', 'shape_mort', shape = TRUE)
 # 
-# var_site_shape_fecund <- filter(dat_join, site %in% replic_col$site) %>% 
+# var_site_shape_fecund <- filter(dat_join, site %in% replic_col$site) %>%
 #   StanVarComp('shape_fec_strain', 'site', 'strain', 'shape_fecund')
 # 
-# var_site_total_offspr <- filter(dat_join, site %in% replic_col$site) %>% 
+# var_site_total_offspr <- filter(dat_join, site %in% replic_col$site) %>%
 #   StanVarComp('total_offspring', 'site', 'strain', 'total_offspring')
 # 
-# var_site_area1 <- filter(dat_join, site %in% replic_col$site) %>% 
+# var_site_area1 <- filter(dat_join, site %in% replic_col$site) %>%
 #   StanVarComp('area', 'site', 'strain', 'area1')
 # 
-# var_site_area2 <- dat_areas_supp %>% 
+# var_site_area2 <- dat_areas_supp %>%
 #   StanVarComp('area', 'site', 'strain', 'area2')
 # 
 # # summarize strain/block
@@ -706,7 +708,7 @@ var_site_df <- read_csv('analysis/var_site_summary.csv')
 
 
 
-##### 20. Correlations among life history traits, within and among strains (Table 2)
+##### 20. Correlations among life history traits, within and among strains
 
 ## among-strain correlations
 AmongTest <- function(data, var_x, var_y) {
@@ -812,7 +814,7 @@ trait_corr_within <- var_within_comb %>%
   do(WithinTest(data = dat_within, var_x = .$x_var, var_y = .$y_var)) %>% 
   ungroup()
 
-# combine within- and among-strain results
+# combine within- and among-strain results (Table S3)
 trait_corr_full <- trait_corr_within %>% 
   right_join(trait_corr_among, by = c('y_var', 'x_var')) %>% 
   mutate(x_var = factor(x_var, levels = vars_foc)) %>%
@@ -874,7 +876,7 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 # }
 # 
 # ## site-specific environmental characteristics
-# X <- filter(dat_sites, drop == 'no') %>% # 22 sites in common garden
+# X <- filter(dat_sites, dropped == FALSE) %>% # 22 sites in common garden
 #   model.matrix(~ log(conductivity) + nutrient_pc1 + log(degree_days), data = .)
 # 
 # X_full <- dat_sites %>% # 24 sites for supplementary exp on frond size
@@ -931,7 +933,7 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 #     mutate(x = c('conduct', 'nutrient', 'degree_days'))
 # }
 # 
-# # get posterior probability mass > 0, and 95% CI
+# # get posterior probability mass > 0, and 95% CI (Table S5)
 # beta_summary <- BetaSummary(beta_std_life, 'lifespan') %>% 
 #   rbind.data.frame(BetaSummary(beta_std_shapem, 'shape_mort')) %>%
 #   rbind.data.frame(BetaSummary(beta_std_shapef, 'shape_fecund')) %>%
@@ -1029,7 +1031,7 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 # 
 # # main common garden experiment (Nsite = 22)
 # df_alpha_main <- dat_sites %>% 
-#   filter(drop == 'no') %>% 
+#   filter(dropped == FALSE) %>% 
 #   dplyr::select(site) %>% 
 #   cbind.data.frame(AlphaQuantiles(alpha_life$alpha, 'life')) %>% 
 #   cbind.data.frame(AlphaQuantiles(alpha_shapem$alpha, 'shapem')) %>% 
@@ -1056,9 +1058,13 @@ beta_summary <- read_csv('analysis/trait_vs_env_beta.csv')
 
 
 
-##### 22. Spatial autocorrelation in traits or environmental characteristics (Table 4)
+##### 22. Spatial autocorrelation in traits or environmental characteristics
+# (Table S4)
+
 # check for shared climate stations (two pairs: Lethbridge A, and Valleyview RS)
-data.frame(x = sort(dat_sites$climate_station))
+dat_sites %>% 
+  arrange(climate_station) %>% 
+  as.data.frame()
 
 # compile median life history traits by site
 meds_main <- dat_join %>% 
@@ -1116,8 +1122,6 @@ moran_summary <- meds_full %>%
 
 # # write to file
 # write.csv(moran_summary, 'analysis/moran_summary.csv', row.names = F)
-
-
 
 
 
@@ -1185,7 +1189,7 @@ p1_4 <- ggplot(hazard_spline) +
   annotate('text', x = 1.85, y = Inf, label = '(d)', hjust = 1, vjust = 1.6, size = 4.5) +
   tt1
 
-p1_5 <- ggplot(filter(dat_tidy_std_strain, noTO == FALSE), aes(age, fecund, group = strain)) +
+p1_5 <- ggplot(filter(dat_tidy_std_strain, uncertain_repro == FALSE), aes(age, fecund, group = strain)) +
   geom_smooth(method = 'loess', se = T, size = 0, fill = 'grey40', alpha = 0.1) +
   geom_smooth(method = 'loess', se = F, size = 0.6, col = 'darkred', fill = 1) +
   coord_cartesian(xlim = c(0, 36), ylim = c(0, 1.05)) +
@@ -1195,7 +1199,7 @@ p1_5 <- ggplot(filter(dat_tidy_std_strain, noTO == FALSE), aes(age, fecund, grou
   annotate('text', x = 37, y = Inf, label = '(e)', hjust = 1, vjust = 1.6, size = 4.5) +
   tt1
 
-p1_6 <- ggplot(filter(dat_tidy_std_strain, noTO == FALSE), aes(age_std, fecund_std, group = strain)) +
+p1_6 <- ggplot(filter(dat_tidy_std_strain, uncertain_repro == FALSE), aes(age_std, fecund_std, group = strain)) +
   geom_smooth(method = 'loess', se = T, size = 0, fill = 'grey40', alpha = 0.1) +
   geom_smooth(method = 'loess', se = F, size = 0.6, col = 'darkred', fill = 1) +
   coord_cartesian(xlim = c(0, 1.8), ylim = c(0, 1.75)) +
@@ -1230,7 +1234,7 @@ fig_1 <- arrangeGrob(g1_1, g1_2, g1_3, g1_4, g1_5, g1_6, nrow = 3,
 # grid.arrange(fig_1)
 
 # write to file
-ggsave('img/Fig_1.tiff', fig_1, height = 7, width = 7, units = 'in', dpi = 300)
+ggsave('img/Fig_1.png', fig_1, height = 7, width = 7, units = 'in', dpi = 300)
 
 
 
@@ -1363,7 +1367,7 @@ fig_2 <- arrangeGrob(
 # grid.arrange(fig_2)
 
 # write to file
-ggsave('img/Fig_2.tiff', fig_2, height = 4.5, width = 7.5, units = 'in', dpi = 300)
+ggsave('img/Fig_2.png', fig_2, height = 4.5, width = 7.5, units = 'in', dpi = 300)
 
 
 
@@ -1560,7 +1564,7 @@ fig_3 <- arrangeGrob(
 # grid.arrange(fig_3)
 
 # write to file
-ggsave('img/Fig_3.tiff', fig_3, height = 7, width = 4.5, units = 'in', dpi = 300)
+ggsave('img/Fig_3.png', fig_3, height = 7, width = 4.5, units = 'in', dpi = 300)
 
 
 
@@ -1631,7 +1635,7 @@ fig_s1 <- arrangeGrob(gs1_a, gs1_b, nrow = 1, widths = c(0.65, 0.35))
 # grid.arrange(fig_s1)
 
 # write to file
-ggsave('img/Fig_S1.tiff', fig_s1, height = 8, width = 14, units = 'in')
+ggsave('img/Fig_S1.png', fig_s1, height = 8, width = 14, units = 'in')
 
 
 
@@ -1689,7 +1693,7 @@ fig_s2 <- ggplot(mortality_param_plot) +
 # print(fig_s2)
 
 # write to file
-ggsave('img/Fig_S2.tiff', fig_s2, height = 6.5, width = 6, units = 'in')
+ggsave('img/Fig_S2.png', fig_s2, height = 6.5, width = 6, units = 'in')
 
 
 
@@ -1819,7 +1823,7 @@ fig_s3 <- arrangeGrob(gs3_1, gs3_2, gs3_3, gs3_4, gs3_5, nrow = 2)
 # grid.arrange(fig_s3)
 
 # write to file
-ggsave('img/Fig_S3.tiff', fig_s3, height = 6.5, width = 9, units = 'in')
+ggsave('img/Fig_S3.png', fig_s3, height = 6.5, width = 9, units = 'in')
 
 
 
@@ -1875,7 +1879,7 @@ fig_s4 <- arrangeGrob(ps4_a, ps4_b, nrow = 1, widths = c(1.35, 1))
 # grid.arrange(fig_s4)
 
 # write to file
-ggsave('img/Fig_S4.tiff', fig_s4, height = 5, width = 10, units = 'in')
+ggsave('img/Fig_S4.png', fig_s4, height = 5, width = 10, units = 'in')
 
 
 
@@ -2058,7 +2062,7 @@ fig_s5 <- arrangeGrob(gs5_11, gs5_21, gs5_31, gs5_41, gs5_51,
 # grid.arrange(fig_s5)
 
 # write to file
-ggsave('img/Fig_S5.tiff', fig_s5, height = 6.75, width = 8, units = 'in')
+ggsave('img/Fig_S5.png', fig_s5, height = 6.75, width = 8, units = 'in')
 
 
 
@@ -2081,8 +2085,8 @@ FormatName <- function(x) {
     gsub('\\.', ' ', .)
 }
 
-# 
-plot_shape_fecund <- filter(dat_tidy_std_ffr_strain, noTO == FALSE) %>%
+# organize data for plotting
+plot_shape_fecund <- filter(dat_tidy_std_ffr_strain, uncertain_repro == FALSE) %>%
   filter(id %in% c('C0334', 'C0481', 'C0009', 'C1140')) %>%
   mutate(strain = FormatName(strain)) %>%
   mutate(id_lab = paste0(id, ' (', strain, ')')) %>%
@@ -2134,7 +2138,7 @@ fig_a1 <- arrangeGrob(ga1_a, ga1_b, nrow = 2)
 # grid.arrange(fig_a1)
 
 # write to file
-ggsave('img/Fig_A1.tiff', fig_a1, height = 7, width = 13, units = 'in')
+ggsave('img/Fig_A1.png', fig_a1, height = 7, width = 13, units = 'in')
 
 
 
@@ -2199,6 +2203,5 @@ fig_a2 <- arrangeGrob(pa2_a, pa2_b, nrow = 1)
 # grid.arrange(fig_a2)
 
 # write to file
-ggsave('img/Fig_A2.tiff', fig_a2, height = 6, width = 12, units = 'in')
-
+ggsave('img/Fig_A2.png', fig_a2, height = 6, width = 12, units = 'in')
 
