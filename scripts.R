@@ -30,9 +30,9 @@ library(loo)
 #  https://github.com/stan-dev/rstan/wiki/RStan-Getting-StartedRStan 
 
 # # load RStan and set relevent options
-library(rstan)
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
+# library(rstan)
+# rstan_options(auto_write = TRUE)
+# options(mc.cores = parallel::detectCores())
 
 
 
