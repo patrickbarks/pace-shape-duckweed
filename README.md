@@ -3,7 +3,7 @@ Data and code for analyses described in the paper "Among-strain consistency in t
 
 &nbsp;
 
-#### Description of data files
+### Description of data files
 
 Column | Description
 -----------------------------|--------------------------------------------------
@@ -41,7 +41,7 @@ _data_sites.csv_ |
 
 &nbsp;
 
-#### Session Info (`sessionInfo()`)
+### Session Info
 
 ```r
 R version 3.4.2 (2017-09-28)
