@@ -421,7 +421,7 @@ mortality_param <- read_csv('analysis/mortality_parametric_strain.csv')
 # # apply ParametricMortality function by strain
 # mortality_param <- dat %>%
 #   group_by(strain) %>%
-#   do(FitSurvModels(t = .$lifespan))
+#   do(ParametricMortality(t = .$lifespan))
 
 # check for divergent transitions (sign of poor model convergence)
 mortality_param %>%
