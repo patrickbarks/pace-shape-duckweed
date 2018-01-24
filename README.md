@@ -13,27 +13,27 @@ _data_demographic.csv_ |
 `strain`                     | strain identifier
 `block`                      | temporal block identifier (a or b)
 `tray`                       | tray identifier
-`date_birth`                 | date of frond birth (dd/mm/yyyy)
+`date_birth`                 | date of frond birth (yyyy-mm-dd)
 `discard`                    | was frond discarded from experiment? (T/F)
 `uncertain_repro`            | was reproduction uncertain at some point in frond's life? (T/F)
 `area`                       | frond surface area (cm^2)
 `Jun_01_2014`:`Aug_31_2014`  | number of offspring detached from frond on given date
 &nbsp;                       |
 _data_areas_supplementary.csv_ |
-`site`                       | site abbreviation
-`strain`                     | strain abbreviation
+`site`                       | site identifier
+`strain`                     | strain identifier
 `block`                      | spatial block (a or b)
 `area`                       | frond surface area (cm^2)
 &nbsp;                       |
 _data_sites.csv_ |
-`site`                       | site abbreviation
+`site`                       | site identifier
 `dropped`                    | was site dropped from main common garden experiment? (T/F)
 `replicated`                 | was site replicated in main common garden experiment? (T/F)
 `lat`                        | latitude (decimal degrees)
 `lon`                        | longitude (decimal degrees)
-`conductivity`               | surface water conductivity (μS / cm at 25 C)
-`tdn`                        | surface water total dissolved nitrogen (μg / L)
-`tdp`                        | surface water total dissolved phosphorus (μg / L)
+`conductivity`               | surface water conductivity (μS/cm at 25 C)
+`tdn`                        | surface water total dissolved nitrogen (μg/L)
+`tdp`                        | surface water total dissolved phosphorus (μg/L)
 `degree_days`                | degree-days above 10 C
 `climate_station`            | nearest Environmental Canada climate station
 `station_dist`               | distance to nearest climate station (km)
