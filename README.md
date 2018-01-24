@@ -43,7 +43,7 @@ _data_sites.csv_ |
 
 ### Session Info
 
-```r
+```
 R version 3.4.2 (2017-09-28)
 Platform: x86_64-apple-darwin15.6.0 (64-bit)
 Running under: macOS Sierra 10.12.6
