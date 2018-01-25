@@ -14,6 +14,8 @@ library(RColorBrewer)
 library(ape)
 library(geosphere)
 library(raster)
+library(maps)
+library(mapproj)
 library(mgcv)
 library(loo)
 
@@ -40,8 +42,8 @@ library(loo)
 
 
 
-##### 3. Ensure working directory is set to '/pace-shape-duckweed/'
-# setwd('~/.../pace-shape-duckweed/')
+##### 3. Ensure working directory is set to 'pace-shape-duckweed/'
+# e.g. setwd('~/.../pace-shape-duckweed/')
 
 
 
@@ -1625,7 +1627,8 @@ ps1_a <- ggplot(alberta) +
   coord_quickmap(xlim = c(-172.1945, -51.65366)) +
   geom_path(aes(long, lat), size = 0.6) +
   scale_x_continuous(labels = seq(175, 50, -25), breaks = seq(-175, -50, 25), expand = c(0.05, 0.05)) +
-  xlab("Longitude (°W)") + ylab("Latitude (°N)") +
+  xlab(expression(paste('Longitude (', degree, 'W)'))) +
+  ylab(expression(paste('Latitude (', degree, 'N)'))) +
   tts1
 
 ps1_b <- ggplot(alberta, aes(x = long, y = lat)) +
@@ -1635,7 +1638,8 @@ ps1_b <- ggplot(alberta, aes(x = long, y = lat)) +
   geom_point(aes(x = lon, y = lat), data = cities, size = 1.9, shape = 1, colour = "black") +
   geom_point(aes(x = lon, y = lat), data = dat_sites, size = 4, shape = 17, colour = "black") +
   geom_point(aes(x = lon, y = lat), data = dat_sites, size = 2.8, shape = 17, colour = "grey40") +
-  xlab("Longitude (°W)") + ylab("Latitude (°N)") +
+  xlab(expression(paste('Longitude (', degree, 'W)'))) +
+  ylab(expression(paste('Latitude (', degree, 'N)'))) +
   scale_x_continuous(labels = c("120", "115", "110"), breaks = c(-120, -115, -110), expand = c(0.05, 0.05)) +
   scale_y_continuous(expand = c(0.02, 0.02)) +
   annotate("text", label = cities$name, x = cities$lon + c(-0.3, -0.2, -0.6), y = cities$lat + c(-0.25, 0.31, 0.25), size = 4.2, colour = "black") +
@@ -1650,6 +1654,7 @@ gs1_b <- ggplotGrob(ps1_b)
 fig_s1 <- arrangeGrob(gs1_a, gs1_b, nrow = 1, widths = c(0.65, 0.35))
 
 # # print to Mac OSX device (change 'quartz' to 'window' if running Windows)
+# dev.off()
 # quartz(height = 8, width = 14)
 # grid.arrange(fig_s1)
 
@@ -1749,7 +1754,6 @@ FormatSite <- function(x) {
   paste0(toupper(substring(x,1,1)), substring(x, 2, 3))
 }
 
-
 ## ggplot theme
 tts3 <- theme_bw() +
   theme(axis.title = element_text(size = 13),
@@ -1816,7 +1820,7 @@ ps3_5 <- dat_join %>%
   scale_y_continuous(breaks = c(4, 6, 8)) +
   scale_fill_identity() +
   coord_flip() +
-  xlab(NULL) + ylab('Surface area (mm²)') +
+  xlab(NULL) + ylab(expression(paste('Surface area (', mm^2, ')'))) +
   annotate('text', x = Inf, y = -Inf, label = '(e)', hjust = -0.3, vjust = 1.5, size = 4.6) +
   tts3
 
@@ -2121,8 +2125,8 @@ plot_shape_fecund <- filter(dat_tidy_std_ffr_strain, uncertain_repro == FALSE) %
 
 plot_labs <- fecund_slope_strain %>%
   filter(id %in% plot_shape_fecund$id) %>%
-  mutate(fecund_slope = paste0('β = ', round(shape_fec_nonstd, 3))) %>%
-  mutate(shape_fec_strain = paste0('β = ', round(shape_fec_strain, 2))) %>%
+  mutate(fecund_slope = paste0('beta ==', round(shape_fec_nonstd, 3))) %>%
+  mutate(shape_fec_strain = paste0('beta == ', round(shape_fec_strain, 2))) %>%
   left_join(dplyr::select(plot_shape_fecund, id, id_lab), by = 'id')
 
 # generate all panels
@@ -2133,7 +2137,7 @@ pa1_a <- ggplot(plot_shape_fecund, aes(age, fecund)) +
   geom_vline(aes(xintercept = lifespan_ffr_group), linetype = 2) +
   scale_y_continuous(breaks = c(0, 1, 2)) +
   facet_wrap(~ id_lab, nrow = 1) +
-  geom_text(data = plot_labs, inherit.aes = F, aes(x = 0, y = -Inf, label = fecund_slope), hjust = 0, vjust = -1, size = 4.5) +
+  geom_text(data = plot_labs, inherit.aes = F, aes(x = 0, y = -Inf, label = fecund_slope), parse = T, hjust = 0, vjust = -1, size = 4.5) +
   xlab('Age (days)') + ylab('Fecundity') +
   tta1
 
@@ -2144,7 +2148,7 @@ pa1_b <- ggplot(plot_shape_fecund, aes(age_std, fecund_std)) +
   geom_vline(aes(xintercept = 1), linetype = 2) +
   scale_x_continuous(breaks = seq(0, 1.2, 0.2)) +
   facet_wrap(~ id_lab, nrow = 1) +
-  geom_text(data = plot_labs, inherit.aes = F, aes(x = 0, y = -Inf, label = shape_fec_strain), hjust = 0, vjust = -1, size = 4.5) +
+  geom_text(data = plot_labs, inherit.aes = F, aes(x = 0, y = -Inf, label = shape_fec_strain), parse = T, hjust = 0, vjust = -1, size = 4.5) +
   xlab('Standardized age (life expectancies)') + ylab('Standardized fecundity') +
   tta1
 
@@ -2230,4 +2234,154 @@ fig_a2 <- arrangeGrob(pa2_a, pa2_b, nrow = 1)
 
 # write to file
 ggsave('img/Fig_A2.png', fig_a2, height = 6, width = 12, units = 'in')
+
+
+
+
+### -------------------------------------------------------------------------- #
+### Figure A3 ---------------------------------------------------------------- #
+### examples relating to measures of shape in life history theory -------------#
+### -------------------------------------------------------------------------- #
+
+### generate data
+
+# sequence of ages
+x <- seq(0, 40, 0.01)
+
+## Example 1
+# mean age at death
+u1_1 <- 20
+u1_2 <- 20
+
+# sd age at death
+sd1_1 <- 2
+sd1_2 <- 8
+
+# prob density for age at death
+f1_1 <- dnorm(x, u1_1, sd1_1)
+f1_2 <- dnorm(x, u1_2, sd1_2)
+
+# survivorship at age
+S1_1 <- sapply(x, function(x) integrate(function (t) dnorm(t, u1_1, sd1_1), lower = x, upper = Inf, rel.tol = 1e-13)$value)
+S1_2 <- sapply(x, function(x) integrate(function (t) dnorm(t, u1_2, sd1_2), lower = x, upper = Inf, rel.tol = 1e-13)$value)
+
+# mortality hazard at age
+h1_1 <- f1_1 / S1_1
+h1_2 <- f1_2 / S1_2
+
+# pace-standardized age
+xs1_1 <- x / u1_1
+xs1_2 <- x / u1_2
+
+# mean-standarized mortality hazard at age
+hs1_1 <- h1_1 / (1 / u1_1)
+hs1_2 <- h1_2 / (1 / u1_2)
+
+
+## Example 2
+# mean age at death
+u2_1 <- 15
+u2_2 <- 20
+
+# sd age at death
+sd2_1 <- 3
+sd2_2 <- 3
+
+# prob density for age at death
+f2_1 <- dnorm(x, u2_1, sd2_1)
+f2_2 <- dnorm(x, u2_2, sd2_2)
+
+# survivorship at age
+S2_1 <- sapply(x, function(x) integrate(function (t) dnorm(t, u2_1, sd2_1), lower = x, upper = Inf, rel.tol = 1e-13)$value)
+S2_2 <- sapply(x, function(x) integrate(function (t) dnorm(t, u2_2, sd2_2), lower = x, upper = Inf, rel.tol = 1e-13)$value)
+
+# mortality hazard at age
+h2_1 <- f2_1 / S2_1
+h2_2 <- f2_2 / S2_2
+
+# pace-standardized age
+xs2_1 <- x / u2_1
+xs2_2 <- x / u2_2
+
+# mean-standarized mortality hazard at age
+hs2_1 <- h2_1 / (1 / u2_1)
+hs2_2 <- h2_2 / (1 / u2_2)
+
+## arrange data for example 1
+df1 <- tibble(age = x, h1_1, h1_2) %>% 
+  gather(type, hazard, 2:3) %>% 
+  mutate(survivorship = c(S1_1, S1_2),
+         age_std = c(xs1_1, xs1_2),
+         hazard_std = c(hs1_1, hs1_2))
+
+## arrange data for example 1
+df2 <- tibble(age = x, h2_1, h2_2) %>% 
+  gather(type, hazard, 2:3) %>% 
+  mutate(survivorship = c(S2_1, S2_2),
+         age_std = c(xs2_1, xs2_2),
+         hazard_std = c(hs2_1, hs2_2))
+
+# ggplot theme
+tta3 <- theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        plot.title = element_text(size = 16, hjust = 0.5),
+        axis.text.y = element_text(angle = 90, hjust = 0.5),
+        axis.title.x = element_text(margin = margin(0.2, 0, 0, 0, unit = 'cm')),
+        axis.title.y = element_text(margin = margin(0, .3, 0, 0, unit = 'cm')))
+
+pa3_1 <- ggplot(df1, aes(age, survivorship, col = type)) +
+  geom_line(lwd = 2.3) +
+  scale_color_discrete(guide = F) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  xlab(NULL) + ylab('Survivorship') + ggtitle('Example 1') +
+  tta3
+
+pa3_2 <- ggplot(df2, aes(age, survivorship, col = type)) +
+  geom_line(lwd = 2.3) +
+  xlab(NULL) + ylab(NULL) + ggtitle('Example 2') +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_color_discrete(guide = F) +
+  tta3
+
+pa3_3 <- ggplot(df1, aes(age, hazard, col = type)) +
+  geom_line(lwd = 2.3) +
+  scale_color_discrete(guide = F) +
+  xlab('Age') + ylab('Mortality') +
+  coord_cartesian(ylim = c(0, 0.8)) +
+  tta3
+
+pa3_4 <- ggplot(df2, aes(age, hazard, col = type)) +
+  geom_line(lwd = 2.3) +
+  xlab(NULL) + ylab(NULL) + 
+  scale_color_discrete(guide = F) +
+  xlab('Age') + 
+  tta3
+
+pa3_5 <- ggplot(df1, aes(age_std, hazard_std, col = type)) +
+  geom_line(lwd = 2.3) +
+  xlab('Standardized age (life expectancies)') + ylab('Standardized mortality') +
+  coord_cartesian(ylim = c(0, 15)) +
+  scale_x_continuous(breaks = c(0, 1, 2)) +
+  scale_color_discrete(guide = F) +
+  tta3
+
+pa3_6 <- ggplot(df2, aes(age_std, hazard_std, col = type)) +
+  geom_line(lwd = 2.3) +
+  xlab('Standardized age (life expectancies)') + ylab(NULL) +
+  scale_color_discrete(guide = F) +
+  tta3
+
+# arrange full figure
+fig_a3 <- arrangeGrob(pa3_1, pa3_2, pa3_3, pa3_4, pa3_5, pa3_6,
+                      nrow = 3, widths = c(1.062, 1))
+
+# # print to Mac OSX device (change 'quartz' to 'window' if running Windows)
+# dev.off()
+# quartz(height = 9, width = 9)
+# grid.arrange(fig_a3)
+
+# write to file
+ggsave('img/Fig_A3.png', fig_a3, height = 9, width = 9, units = 'in')
 
